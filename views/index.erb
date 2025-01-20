@@ -1,13 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Projekt #2</title>
-    <link rel="stylesheet" type="text/css" href="/style.css?<%=Time.now.to_i%>">
-</head>
-<body>
-  <h1>Webbserverprogrammering 1 - Projekt 3 - mall</h1>
-  <img src="/img/glhf.png">
-</body>
-</html>
+<h1>Logga in</h1>
+
+<form action="/login" method="POST">
+  <label>Username:
+    <input type="text" value="ola" name="username" id="username" required></label>
+
+  <label for="password">Password:
+    <input type="password" value="123" name="password" id="password" required></label>
+  <button type="submit">Login</button>
+</form>
+<h3>Have no account? <a href="/signup">sign up</a></h3>
+
