@@ -82,7 +82,26 @@ class App < Sinatra::Base
   end
 
   get '/training' do
-    erb(:training)
+    db = SQLite3::Database.new('db/users.sqlite')
+    db.results_as_hash = true
+  
+    @days = [
+      { day: "Mon", exercise: nil },
+      { day: "Tue", exercise: nil },
+      { day: "Wed", exercise: nil },
+      { day: "Thu", exercise: nil },
+      { day: "Fri", exercise: nil },
+      { day: "Sat", exercise: nil },
+      { day: "Sun", exercise: nil }
+    ]
+  
+    exercises = db.execute('SELECT day, exercise FROM exercises WHERE week_id = 1')
+    exercises.each do |exercise|
+      day_entry = @days.find { |d| d[:day] == exercise['day'] }
+      day_entry[:exercise] = exercise['exercise'] if day_entry
+    end
+  
+    erb :training
   end
 
   get '/diet' do

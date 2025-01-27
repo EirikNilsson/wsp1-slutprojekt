@@ -5,20 +5,22 @@
   <title>Create new user</title>
 </head>
 <body>
-  <h1>Create new user</h1>
+  <div class="login-container">
+    <h1>Create new user</h1>
 
-  <% if @error %>
-    <p style="color: red;"><%= @error %></p>
-  <% end %>
-
-  <form action="/signup" method="post">
-    <label for="username">Användarnamn:</label>
-    <input type="text" id="username" name="username" required>
-    <br>
-    <label for="password">Lösenord:</label>
-    <input type="password" id="password" name="password" required>
-    <br>
-    <button type="submit">Create</button>
-  </form>
+    <% if @error %>
+      <p style="color: red;"><%= @error %></p>
+    <% end %>
+    <form action="/signup" method="post">
+      <label for="username">Användarnamn:</label>
+      <input type="text" id="username" name="username" required>
+      <label for="password">Lösenord:</label>
+      <input type="password" id="password" name="password" required>
+      <button type="submit">Create</button>
+    </form>
+  </div>
 </body>
 </html>
+
+
+
