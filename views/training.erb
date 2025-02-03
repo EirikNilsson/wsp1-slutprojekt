@@ -13,26 +13,32 @@
       <ul class="nav">
         <li><a href="training">Training</a></li>
         <li><a href="diet">Diet</a></li>
+        <li><a href="edit">Edit your program</a></li>
         <li><a href="logout">Log out</a></li>
       </ul>
     </nav>
   </aside>
 
+
   <div class="container">
     <main class="main">
       <section class="box box-1"></section>
-      <div class="week-container">
-        <% @days.each do |day| %>
-          <div class="day">
-            <p><strong><%= day[:day] %></strong></p>
-            <% if day[:exercise] %>
-              <p>Exercise: <%= day[:exercise] %></p>
-            <% else %>
-              <p>No exercise</p>
-            <% end %>
-          </div>
-        <% end %>
-      </div>
+        <div class="week-container">
+          <% @days.each do |day| %>
+            <div class="day">
+              <p><strong><%= day[:day] %></strong></p>
+              <% if day[:exercises].any? %>
+                <ul>
+                  <% day[:exercises].each do |exercise| %>
+                    <li><%= exercise %></li>
+                  <% end %>
+                </ul>
+              <% else %>
+                <p>No exercises</p>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
       <section class="box box-3"></section>
     </main>
   </div>

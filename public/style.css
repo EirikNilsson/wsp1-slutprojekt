@@ -53,13 +53,12 @@ p {
 
 .main {
   width: 1200px;
-  height: 600px;
+  height: 400px;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   grid-template-rows: repeat(3, 1fr);
-  gap: 40px;
-  padding: 40px;
-  background-color: #000;
+  gap: 20px;
+  padding: 10px;
 }
 
 .box {
@@ -68,19 +67,9 @@ p {
 
 .box-1 {
   background-color: #274d5d;
+  height: 95vh;
 }
 
-.box-2 {
-  background-color: #fff;
-}
-
-.box-3 {
-  background-color: #4ab1e6;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-evenly;
-  padding: 10px;
-}
 
 .sidebar {
   width: 15%;
@@ -93,29 +82,44 @@ p {
 .container {
   flex: 1;
   padding: 10px;
-  background-color: #000;
   color: white;
 }
 
 .week-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-  gap: 30px;
+  grid-template-rows: repeat(auto-fit, minmax(100px, 0.5fr));
+  gap: 15px;
 }
 
 .day {
   background-color: #333;
-  padding: 10px;
+  padding: 1px;
   border-radius: 8px;
   text-align: center;
+  height: 100px;
+
 }
 
 .day strong {
   font-size: 1.2em;
   color: #00ffcc;
+  text-align: left;
 }
 
-/* Logga in-styling */
+.day ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.day li {
+  background-color: #444;
+  margin: 5px 0;
+  padding: 8px;
+  border-radius: 5px;
+  color: white;
+}
+
+
 .login-container {
   margin: auto;
   padding: 20px 30px;
@@ -192,3 +196,4 @@ p {
 .login-container .signup a:hover {
   color: #3693c7;
 }
+

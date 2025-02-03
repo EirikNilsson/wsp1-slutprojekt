@@ -1,6 +1,7 @@
 require 'sinatra'
 require 'sqlite3'
 require 'bcrypt'
+require 'securerandom'
 
 class App < Sinatra::Base
   def db_connection
@@ -16,7 +17,7 @@ class App < Sinatra::Base
 
   get '/' do
     if session[:user_id]
-      erb(:"training")
+      redirect '/training'
     else
       erb :index
     end
@@ -26,7 +27,6 @@ class App < Sinatra::Base
     erb :newuser 
   end
 
-
   post '/signup' do
     username = params[:username]
     plain_password = params[:password]
@@ -34,25 +34,6 @@ class App < Sinatra::Base
     db = db_connection
     db.execute("INSERT INTO users (username, password) VALUES (?, ?)", [username, password_hashed])
     redirect '/' 
-  end
-
-  post '/testpwcreate' do
-    plain_password = params[:plainpassword]
-    password_hashed = BCrypt::Password.create(plain_password)
-    p password_hashed
-  end
-
-  get '/admin' do
-    if session[:user_id]
-      erb(:"admin/index")
-    else
-      status 401
-      redirect '/unauthorized'
-    end
-  end
-
-  get '/unauthorized' do
-    erb(:unauthorized)
   end
 
   post '/login' do
@@ -82,29 +63,46 @@ class App < Sinatra::Base
   end
 
   get '/training' do
-    db = SQLite3::Database.new('db/users.sqlite')
-    db.results_as_hash = true
+    db = db_connection
   
     @days = [
-      { day: "Mon", exercise: nil },
-      { day: "Tue", exercise: nil },
-      { day: "Wed", exercise: nil },
-      { day: "Thu", exercise: nil },
-      { day: "Fri", exercise: nil },
-      { day: "Sat", exercise: nil },
-      { day: "Sun", exercise: nil }
+      { day: "Monday", exercises: [] },
+      { day: "Tuesday", exercises: [] },
+      { day: "Wednesday", exercises: [] },
+      { day: "Thursday", exercises: [] },
+      { day: "Friday", exercises: [] },
+      { day: "Saturday", exercises: [] },
+      { day: "Sunday", exercises: [] }
     ]
-  
+
     exercises = db.execute('SELECT day, exercise FROM exercises WHERE week_id = 1')
+  
     exercises.each do |exercise|
       day_entry = @days.find { |d| d[:day] == exercise['day'] }
-      day_entry[:exercise] = exercise['exercise'] if day_entry
+      day_entry[:exercises] << exercise['exercise'] if day_entry
     end
   
     erb :training
   end
 
   get '/diet' do
-    erb(:diet)
+    erb :diet
+  end
+
+  get '/edit' do 
+    erb :edit
+  end
+
+  post '/edit' do
+    goal = params[:goal]
+    days = params[:days].to_i
+    duration = params[:duration].to_i
+    db = db_connection
+    db.execute("INSERT INTO training_goals (user_id, goal, days, duration) VALUES (?, ?, ?, ?)", [session[:user_id], goal, days, duration])
+    redirect '/training'
+  end
+
+  get '/unauthorized' do
+    erb :unauthorized
   end
 end
