@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Projekt #2</title>
+    <title>Training</title>
     <link rel="stylesheet" type="text/css" href="public/style.css?<%=Time.now.to_i%>">
 </head>
 <body>
@@ -23,22 +23,22 @@
   <div class="container">
     <main class="main">
       <section class="box box-1"></section>
-        <div class="week-container">
-          <% @days.each do |day| %>
-            <div class="day">
-              <p><strong><%= day[:day] %></strong></p>
-              <% if day[:exercises].any? %>
-                <ul>
-                  <% day[:exercises].each do |exercise| %>
-                    <li><%= exercise %></li>
-                  <% end %>
-                </ul>
-              <% else %>
-                <p>No exercises</p>
+      <div class="week-container">
+      <% @days.each do |day| %>
+        <div class="day">
+          <p><strong><%= day[:day] %></strong></p>
+          <% if day[:exercises].any? %>
+            <ul>
+              <% day[:exercises].each do |exercise| %>
+                <li><%= exercise %></li>
               <% end %>
-            </div>
+            </ul>
+          <% else %>
+            <p>No exercises</p>
           <% end %>
         </div>
+      <% end %>
+      </div>
       <section class="box box-3"></section>
     </main>
   </div>

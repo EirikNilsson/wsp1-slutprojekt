@@ -80,21 +80,22 @@ class Seeder
       { goal: "Build muscle", day: "Wednesday", exercise: "Deadlifts" },
       { goal: "Build muscle", day: "Thursday", exercise: "Pull-ups" },
       { goal: "Build muscle", day: "Friday", exercise: "Dumbbell Rows" },
-
-   #   { goal: "Lose weight", day: "Monday", exercise: "Treadmill Running" },
-    #  { goal: "Lose weight", day: "Tuesday", exercise: "Jump Rope" },
-     # { goal: "Lose weight", day: "Wednesday", exercise: "Cycling" },
-      #{ goal: "Lose weight", day: "Thursday", exercise: "Swimming" },
-      #{ goal: "Lose weight", day: "Friday", exercise: "HIIT Circuit" },
-
-      #{ goal: "Improve endurance", day: "Monday", exercise: "Long-distance Running" },
-      #{ goal: "Improve endurance", day: "Tuesday", exercise: "Rowing Machine" },
-      #{ goal: "Improve endurance", day: "Wednesday", exercise: "Interval Sprints" },
-      #{ goal: "Improve endurance", day: "Thursday", exercise: "Jump Rope" },
-      #{ goal: "Improve endurance", day: "Friday", exercise: "Burpees" }
+    
+      { goal: "Lose weight", day: "Monday", exercise: "Treadmill Running" },
+      { goal: "Lose weight", day: "Tuesday", exercise: "Jump Rope" },
+      { goal: "Lose weight", day: "Wednesday", exercise: "Cycling" },
+      { goal: "Lose weight", day: "Thursday", exercise: "Swimming" },
+      { goal: "Lose weight", day: "Friday", exercise: "HIIT Circuit" },
+    
+      { goal: "Improve endurance", day: "Monday", exercise: "Long-distance Running" },
+      { goal: "Improve endurance", day: "Tuesday", exercise: "Rowing Machine" },
+      { goal: "Improve endurance", day: "Wednesday", exercise: "Interval Sprints" },
+      { goal: "Improve endurance", day: "Thursday", exercise: "Jump Rope" },
+      { goal: "Improve endurance", day: "Friday", exercise: "Burpees" }
     ]
-
+    
     exercises.each do |exercise|
+      # Insert exercise with correct goal, day, and week_id
       db.execute('INSERT INTO exercises (week_id, day, exercise, goal, checkmark) VALUES (?, ?, ?, ?, ?)', 
                  [1, exercise[:day], exercise[:exercise], exercise[:goal], 0])
     end
@@ -103,7 +104,7 @@ class Seeder
   private
 
   def self.db
-    @db ||= SQLite3::Database.new('db/users.sqlite').tap do |db|
+    @db ||= SQLite3::Database.new('db/users.sqlite').tap do |db| 
       db.results_as_hash = true
     end
   end

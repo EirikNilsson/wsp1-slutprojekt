@@ -62,47 +62,71 @@ class App < Sinatra::Base
     redirect '/'
   end
 
-  get '/training' do
-    db = db_connection
-  
-    @days = [
-      { day: "Monday", exercises: [] },
-      { day: "Tuesday", exercises: [] },
-      { day: "Wednesday", exercises: [] },
-      { day: "Thursday", exercises: [] },
-      { day: "Friday", exercises: [] },
-      { day: "Saturday", exercises: [] },
-      { day: "Sunday", exercises: [] }
-    ]
-
-    exercises = db.execute('SELECT day, exercise FROM exercises WHERE week_id = 1')
-  
-    exercises.each do |exercise|
-      day_entry = @days.find { |d| d[:day] == exercise['day'] }
-      day_entry[:exercises] << exercise['exercise'] if day_entry
-    end
-  
-    erb :training
-  end
-
-  get '/diet' do
-    erb :diet
-  end
-
   get '/edit' do 
     erb :edit
   end
-
+  
   post '/edit' do
     goal = params[:goal]
     days = params[:days].to_i
     duration = params[:duration].to_i
     db = db_connection
-    db.execute("INSERT INTO training_goals (user_id, goal, days, duration) VALUES (?, ?, ?, ?)", [session[:user_id], goal, days, duration])
+  
+    existing_goal = db.execute("SELECT * FROM training_goals WHERE user_id = ?", session[:user_id]).first
+  
+    if existing_goal
+      db.execute("UPDATE training_goals SET goal = ?, days = ?, duration = ? WHERE user_id = ?", [goal, days, duration, session[:user_id]])
+    else
+      db.execute("INSERT INTO training_goals (user_id, goal, days, duration) VALUES (?, ?, ?, ?)", [session[:user_id], goal, days, duration])
+    end
+  
     redirect '/training'
   end
+  
 
   get '/unauthorized' do
     erb :unauthorized
   end
+
+  get '/training' do
+    db = db_connection
+  
+    # Hämta användarens träningsmål
+    user_goal = db.execute('SELECT goal FROM training_goals WHERE user_id = ?', session[:user_id]).first
+  
+    if user_goal
+      goal = user_goal['goal']
+  
+      # Skapa en struktur för dagarna
+      @days = [
+        { day: "Monday", exercises: [] },
+        { day: "Tuesday", exercises: [] },
+        { day: "Wednesday", exercises: [] },
+        { day: "Thursday", exercises: [] },
+        { day: "Friday", exercises: [] },
+        { day: "Saturday", exercises: [] },
+        { day: "Sunday", exercises: [] }
+      ]
+      
+      # Hämta övningarna för det specifika målet
+      exercises = db.execute('SELECT day, exercise FROM exercises WHERE goal = ?', goal)
+  
+      # Lägg till övningarna i rätt dag
+      exercises.each do |exercise|
+        day_entry = @days.find { |d| d[:day] == exercise['day'] }
+        day_entry[:exercises] << exercise['exercise'] if day_entry
+      end
+    else
+      @days = []
+    end
+  
+    erb :training
+  end
+  
+
+
+  get '/diet' do
+    erb :diet
+  end
+
 end
