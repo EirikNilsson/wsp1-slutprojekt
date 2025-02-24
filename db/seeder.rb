@@ -51,7 +51,12 @@ class Seeder
                   days INTEGER NOT NULL,
                   duration INTEGER NOT NULL,
                   FOREIGN KEY (user_id) REFERENCES users(id))')
-  end
+
+    db.execute('CREATE TABLE diets (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    meal TEXT NOT NULL,
+                    day TEXT NOT NULL)')
+    end
 
   def self.populate_tables
     password_hashed = BCrypt::Password.create("189")
@@ -80,6 +85,8 @@ class Seeder
       { goal: "Build muscle", day: "Wednesday", exercise: "Deadlifts" },
       { goal: "Build muscle", day: "Thursday", exercise: "Pull-ups" },
       { goal: "Build muscle", day: "Friday", exercise: "Dumbbell Rows" },
+      { goal: "Build muscle", day: "Saturday", exercise: "Bench Press" },
+      { goal: "Build muscle", day: "Sunday", exercise: "Deadlifts" },
     
       { goal: "Lose weight", day: "Monday", exercise: "Treadmill Running" },
       { goal: "Lose weight", day: "Tuesday", exercise: "Jump Rope" },
@@ -95,9 +102,22 @@ class Seeder
     ]
     
     exercises.each do |exercise|
-      # Insert exercise with correct goal, day, and week_id
       db.execute('INSERT INTO exercises (week_id, day, exercise, goal, checkmark) VALUES (?, ?, ?, ?, ?)', 
                  [1, exercise[:day], exercise[:exercise], exercise[:goal], 0])
+    end
+
+    meals = [
+      { meal: "Grilled Chicken with Quinoa", day: "Monday" },
+      { meal: "Salmon and Sweet Potatoes", day: "Tuesday" },
+      { meal: "Oatmeal with Berries", day: "Wednesday" },
+      { meal: "Vegetarian Stir-Fry", day: "Thursday" },
+      { meal: "Turkey and Brown Rice", day: "Friday" },
+      { meal: "Protein Smoothie", day: "Saturday" },
+      { meal: "Pasta with Tomato Sauce", day: "Sunday" }
+    ]
+    
+    meals.each do |meal|
+      db.execute('INSERT INTO diets (meal, day) VALUES (?, ?)', [meal[:meal], meal[:day]])
     end
   end
 

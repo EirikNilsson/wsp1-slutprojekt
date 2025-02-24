@@ -22,7 +22,18 @@
 
   <div class="container">
     <main class="main">
-      <section class="box box-1"></section>
+      <section class="box box-1">
+        <% if @days_per_week || @goal || @duration %>
+          <p>Duration: <%= @duration || "None" %> </p>
+          <p>Trainingdays in week: <%= @days_per_week || "None" %> </p>
+          <p>Goal: <%= @goal || "None" %> </p>
+        <% else %>
+          <p>Duration: None</p>
+          <p>Trainingdays in week: None </p>
+          <p>Goal: None </p>
+        <% end %>
+      
+      </section>
       <div class="week-container">
       <% @days.each do |day| %>
         <div class="day">
@@ -34,7 +45,7 @@
               <% end %>
             </ul>
           <% else %>
-            <p>No exercises</p>
+            <p>Rest Day</p>
           <% end %>
         </div>
       <% end %>

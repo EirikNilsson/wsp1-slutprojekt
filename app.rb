@@ -82,7 +82,6 @@ class App < Sinatra::Base
   
     redirect '/training'
   end
-  
 
   get '/unauthorized' do
     erb :unauthorized
@@ -91,42 +90,69 @@ class App < Sinatra::Base
   get '/training' do
     db = db_connection
   
-    # Hämta användarens träningsmål
-    user_goal = db.execute('SELECT goal FROM training_goals WHERE user_id = ?', session[:user_id]).first
+    # Hämta användarens träningsdata från databasen
+    user_data = db.execute('SELECT goal, days, duration FROM training_goals WHERE user_id = ?', session[:user_id]).first
   
-    if user_goal
-      goal = user_goal['goal']
+    if user_data
+      @goal = user_data['goal']
+      @days_per_week = user_data['days'].to_i
+      @duration = user_data['duration']
   
-      # Skapa en struktur för dagarna
-      @days = [
-        { day: "Monday", exercises: [] },
-        { day: "Tuesday", exercises: [] },
-        { day: "Wednesday", exercises: [] },
-        { day: "Thursday", exercises: [] },
-        { day: "Friday", exercises: [] },
-        { day: "Saturday", exercises: [] },
-        { day: "Sunday", exercises: [] }
-      ]
-      
-      # Hämta övningarna för det specifika målet
-      exercises = db.execute('SELECT day, exercise FROM exercises WHERE goal = ?', goal)
+      all_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
   
-      # Lägg till övningarna i rätt dag
-      exercises.each do |exercise|
-        day_entry = @days.find { |d| d[:day] == exercise['day'] }
-        day_entry[:exercises] << exercise['exercise'] if day_entry
+      training_schedules = {
+        1 => ["Wednesday"],
+        2 => ["Monday", "Thursday"],
+        3 => ["Monday", "Wednesday", "Friday"],
+        4 => ["Monday", "Tuesday", "Thursday", "Saturday"],
+        5 => ["Monday", "Tuesday", "Wednesday", "Friday", "Saturday"],
+        6 => ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+        7 => all_days
+      }
+  
+      selected_days = training_schedules[@days_per_week] || all_days.first(@days_per_week)
+  
+      # Skapa en struktur för alla dagar
+      @days = all_days.map { |day| { day: day, exercises: [] } }
+  
+      # Hämta övningarna
+      exercises = db.execute('SELECT exercise FROM exercises WHERE goal = ?', @goal)
+  
+      # Fördela övningarna
+      if exercises.any?
+        selected_days.each_with_index do |day, index|
+          day_entry = @days.find { |d| d[:day] == day }
+          day_entry[:exercises] << exercises[index % exercises.length]['exercise'] if day_entry
+        end
       end
     else
+      @goal = nil
+      @days_per_week = nil
+      @duration = nil
       @days = []
     end
   
     erb :training
   end
   
-
-
   get '/diet' do
+    db = db_connection
+  
+    # Hämta användarens träningsschema
+    training_days = db.execute('SELECT days FROM training_goals WHERE user_id = ?', session[:user_id]).first
+    training_days = training_days ? training_days['days'].to_i : 3 # Standard: 3 dagar per vecka
+  
+    # Veckodagar i ordning
+    all_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+  
+    # Hämta alla måltider från databasen (ändrat till 'diets')
+    meals = db.execute('SELECT meal FROM diets')
+  
+    # Fördela maträtter över veckodagarna
+    @days = all_days.map.with_index do |day, index|
+      { day: day, meal: meals[index % meals.length]['meal'] }
+    end
+  
     erb :diet
   end
-
 end
