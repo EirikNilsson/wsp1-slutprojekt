@@ -23,18 +23,18 @@ class Seeder
                   id INTEGER PRIMARY KEY AUTOINCREMENT,
                   username TEXT UNIQUE NOT NULL,
                   password TEXT NOT NULL)')
-
+  
     db.execute('CREATE TABLE goals (
                   id INTEGER PRIMARY KEY AUTOINCREMENT,
                   goal TEXT NOT NULL,
                   days_per_week INTEGER NOT NULL,
                   session_length INTEGER NOT NULL)')
-
+  
     db.execute('CREATE TABLE weeks (
                   id INTEGER PRIMARY KEY AUTOINCREMENT,
                   week_id INTEGER NOT NULL,
                   day TEXT NOT NULL)')
-
+  
     db.execute('CREATE TABLE exercises (
                   id INTEGER PRIMARY KEY AUTOINCREMENT,
                   week_id INTEGER NOT NULL,
@@ -43,7 +43,7 @@ class Seeder
                   goal TEXT NOT NULL,
                   checkmark INTEGER DEFAULT 0,
                   FOREIGN KEY (week_id) REFERENCES weeks(week_id))')
-
+  
     db.execute('CREATE TABLE training_goals (
                   id INTEGER PRIMARY KEY AUTOINCREMENT,
                   user_id INTEGER NOT NULL,
@@ -51,12 +51,20 @@ class Seeder
                   days INTEGER NOT NULL,
                   duration INTEGER NOT NULL,
                   FOREIGN KEY (user_id) REFERENCES users(id))')
-
+  
     db.execute('CREATE TABLE diets (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    meal TEXT NOT NULL,
-                    day TEXT NOT NULL)')
-    end
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  meal TEXT NOT NULL,
+                  day TEXT NOT NULL,
+                  goal TEXT NOT NULL)')
+  
+    db.execute('CREATE TABLE weights (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  user_id INTEGER NOT NULL,
+                  weight FLOAT NOT NULL,
+                  date DATE NOT NULL,
+                  FOREIGN KEY (user_id) REFERENCES users(id))')
+  end
 
   def self.populate_tables
     password_hashed = BCrypt::Password.create("189")
@@ -107,17 +115,36 @@ class Seeder
     end
 
     meals = [
-      { meal: "Grilled Chicken with Quinoa", day: "Monday" },
-      { meal: "Salmon and Sweet Potatoes", day: "Tuesday" },
-      { meal: "Oatmeal with Berries", day: "Wednesday" },
-      { meal: "Vegetarian Stir-Fry", day: "Thursday" },
-      { meal: "Turkey and Brown Rice", day: "Friday" },
-      { meal: "Protein Smoothie", day: "Saturday" },
-      { meal: "Pasta with Tomato Sauce", day: "Sunday" }
+      # Maträtter för "Build muscle"
+      { meal: "Grilled Chicken with Quinoa", day: "Monday", goal: "Build muscle" },
+      { meal: "Beef Steak with Broccoli", day: "Tuesday", goal: "Build muscle" },
+      { meal: "Egg and Avocado Toast", day: "Wednesday", goal: "Build muscle" },
+      { meal: "Protein Pancakes", day: "Thursday", goal: "Build muscle" },
+      { meal: "Grilled Salmon with Asparagus", day: "Friday", goal: "Build muscle" },
+      { meal: "Chicken and Rice Bowl", day: "Saturday", goal: "Build muscle" },
+      { meal: "Turkey Meatballs with Pasta", day: "Sunday", goal: "Build muscle" },
+    
+      # Maträtter för "Lose weight"
+      { meal: "Grilled Fish with Steamed Vegetables", day: "Monday", goal: "Lose weight" },
+      { meal: "Vegetable Soup", day: "Tuesday", goal: "Lose weight" },
+      { meal: "Grilled Chicken Salad", day: "Wednesday", goal: "Lose weight" },
+      { meal: "Zucchini Noodles with Pesto", day: "Thursday", goal: "Lose weight" },
+      { meal: "Quinoa and Black Bean Salad", day: "Friday", goal: "Lose weight" },
+      { meal: "Grilled Shrimp with Cauliflower Rice", day: "Saturday", goal: "Lose weight" },
+      { meal: "Vegetable Stir-Fry with Tofu", day: "Sunday", goal: "Lose weight" },
+    
+      # Maträtter för "Improve endurance"
+      { meal: "Oatmeal with Banana and Almond Butter", day: "Monday", goal: "Improve endurance" },
+      { meal: "Sweet Potato and Chickpea Curry", day: "Tuesday", goal: "Improve endurance" },
+      { meal: "Grilled Chicken with Brown Rice", day: "Wednesday", goal: "Improve endurance" },
+      { meal: "Lentil and Vegetable Stew", day: "Thursday", goal: "Improve endurance" },
+      { meal: "Grilled Turkey Burger with Sweet Potato Fries", day: "Friday", goal: "Improve endurance" },
+      { meal: "Vegetable and Quinoa Stuffed Peppers", day: "Saturday", goal: "Improve endurance" },
+      { meal: "Pasta with Marinara Sauce and Grilled Chicken", day: "Sunday", goal: "Improve endurance" }
     ]
     
     meals.each do |meal|
-      db.execute('INSERT INTO diets (meal, day) VALUES (?, ?)', [meal[:meal], meal[:day]])
+      db.execute('INSERT INTO diets (meal, day, goal) VALUES (?, ?, ?)', [meal[:meal], meal[:day], meal[:goal]])
     end
   end
 

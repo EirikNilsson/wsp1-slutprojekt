@@ -138,21 +138,53 @@ class App < Sinatra::Base
   get '/diet' do
     db = db_connection
   
-    # Hämta användarens träningsschema
-    training_days = db.execute('SELECT days FROM training_goals WHERE user_id = ?', session[:user_id]).first
-    training_days = training_days ? training_days['days'].to_i : 3 # Standard: 3 dagar per vecka
+    # Hämta användarens träningsmål från training_goals
+    user_goal_data = db.execute('SELECT goal FROM training_goals WHERE user_id = ?', session[:user_id]).first
   
-    # Veckodagar i ordning
-    all_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    if user_goal_data
+      goal = user_goal_data['goal']
   
-    # Hämta alla måltider från databasen (ändrat till 'diets')
-    meals = db.execute('SELECT meal FROM diets')
+      # Hämta alla måltider för det valda målet
+      meals = db.execute('SELECT meal, day FROM diets WHERE goal = ?', goal)
   
-    # Fördela maträtter över veckodagarna
-    @days = all_days.map.with_index do |day, index|
-      { day: day, meal: meals[index % meals.length]['meal'] }
+      # Skapa en struktur för alla dagar
+      all_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+      @days = all_days.map { |day| { day: day, meal: nil } }
+  
+      # Fyll i måltiderna för varje dag
+      meals.each do |meal|
+        day_entry = @days.find { |d| d[:day] == meal['day'] }
+        day_entry[:meal] = meal['meal'] if day_entry
+      end
+    else
+      @days = []
     end
   
     erb :diet
   end
+
+  post '/log_weight' do
+    weight = params[:weight].to_f
+    date = params[:date]
+    db = db_connection
+  
+    db.execute('INSERT INTO weights (user_id, weight, date) VALUES (?, ?, ?)', [session[:user_id], weight, date])
+  
+    redirect '/diet'
+  end
+
+  get '/weight_data' do
+    db = db_connection
+  
+    # Hämta användarens viktdata
+    weight_data = db.execute('SELECT date, weight FROM weights WHERE user_id = ? ORDER BY date', session[:user_id])
+  
+    # Formatera data för Chart.js
+    dates = weight_data.map { |entry| entry['date'] }
+    weights = weight_data.map { |entry| entry['weight'] }
+  
+    content_type :json
+    { dates: dates, weights: weights }.to_json
+  end
+  
 end
