@@ -15,12 +15,41 @@ class App < Sinatra::Base
     set :session_secret, SecureRandom.hex(64)
   end
 
-  get '/' do
+  get '/' do 
+    redirect '/login'
+  end
+
+  get '/login' do
     if session[:user_id]
       redirect '/training'
     else
       erb :index
     end
+  end
+
+  get '/users/:id' do
+    redirect '/login' unless session[:user_id]
+  
+    db = db_connection
+    user = db.execute("SELECT * FROM users WHERE id = ?", [params[:id]]).first
+    
+    if user
+      "Logged in as: #{user['username']}"
+    else
+      "User not found"
+    end
+  end
+
+  post '/users/:id/delete' do
+    redirect '/login' unless session[:user_id] == params[:id].to_i
+    
+    db = db_connection
+    db.execute("DELETE FROM users WHERE id = ?", [params[:id]])
+
+    session.clear
+  
+
+    redirect '/login'
   end
 
   get '/signup' do
@@ -33,7 +62,7 @@ class App < Sinatra::Base
     password_hashed = BCrypt::Password.create(plain_password)
     db = db_connection
     db.execute("INSERT INTO users (username, password) VALUES (?, ?)", [username, password_hashed])
-    redirect '/' 
+    redirect '/login' 
   end
 
   post '/login' do
@@ -59,14 +88,14 @@ class App < Sinatra::Base
 
   get '/logout' do
     session.clear
-    redirect '/'
+    redirect '/login'
   end
 
-  get '/edit' do 
-    erb :edit
+  get '/create' do 
+    erb :create
   end
   
-  post '/edit' do
+  post '/create' do
     goal = params[:goal]
     days = params[:days].to_i
     duration = params[:duration].to_i
@@ -134,24 +163,61 @@ class App < Sinatra::Base
   
     erb :training
   end
+
+  get '/edit' do
+    db = db_connection  # Add this line to establish a database connection
+    @exercises = db.execute("SELECT * FROM exercises")
+    @days = db.execute("SELECT * FROM weeks WHERE user_id = ?", session[:user_id])  # Assuming this is what you need for @days
+    
+    # Now map the days correctly
+    @days = @days.map do |day|
+      {
+        day: day["day"],
+        exercises: db.execute("SELECT exercise FROM exercises WHERE day = ?", day["day"]).map { |e| e["exercise"] }
+      }
+    end
+    
+    erb :edit
+  end
+# Modify '/add_exercise' to use the existing 'weeks' table
+post '/add_exercise' do
+  day = params[:day]
+  exercise = params[:exercise]
+  
+  # Find the week_id and user_id from the 'weeks' table
+  week = db.execute("SELECT id FROM weeks WHERE user_id = ? AND day = ?", session[:user_id], day).first
+  
+  if week
+    db.execute("INSERT INTO exercises (week_id, day, exercise, goal, checkmark) VALUES (?, ?, ?, ?, ?)",
+               [week["id"], day, exercise, session[:user_id], 0])
+  end
+
+  redirect '/edit'
+end
+
+# Modify '/delete_exercise' to use the existing 'exercises' table
+post '/delete_exercise' do
+  exercise = params[:exercise]
+  db.execute("DELETE FROM exercises WHERE exercise = ? AND week_id IN (SELECT id FROM weeks WHERE user_id = ?)", exercise, session[:user_id])
+  redirect '/edit'
+end
+
+  
+  
   
   get '/diet' do
     db = db_connection
   
-    # Hämta användarens träningsmål från training_goals
     user_goal_data = db.execute('SELECT goal FROM training_goals WHERE user_id = ?', session[:user_id]).first
   
     if user_goal_data
       goal = user_goal_data['goal']
   
-      # Hämta alla måltider för det valda målet
       meals = db.execute('SELECT meal, day FROM diets WHERE goal = ?', goal)
-  
-      # Skapa en struktur för alla dagar
+
       all_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
       @days = all_days.map { |day| { day: day, meal: nil } }
-  
-      # Fyll i måltiderna för varje dag
+
       meals.each do |meal|
         day_entry = @days.find { |d| d[:day] == meal['day'] }
         day_entry[:meal] = meal['meal'] if day_entry
@@ -176,10 +242,8 @@ class App < Sinatra::Base
   get '/weight_data' do
     db = db_connection
   
-    # Hämta användarens viktdata
     weight_data = db.execute('SELECT date, weight FROM weights WHERE user_id = ? ORDER BY date', session[:user_id])
-  
-    # Formatera data för Chart.js
+
     dates = weight_data.map { |entry| entry['date'] }
     weights = weight_data.map { |entry| entry['weight'] }
   

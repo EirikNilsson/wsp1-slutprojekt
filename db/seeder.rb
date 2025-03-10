@@ -29,11 +29,15 @@ class Seeder
                   goal TEXT NOT NULL,
                   days_per_week INTEGER NOT NULL,
                   session_length INTEGER NOT NULL)')
-  
+
     db.execute('CREATE TABLE weeks (
-                  id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  week_id INTEGER NOT NULL,
-                  day TEXT NOT NULL)')
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              user_id INTEGER NOT NULL,
+              week_id INTEGER NOT NULL,
+              day TEXT NOT NULL,
+              FOREIGN KEY (user_id) REFERENCES users(id))')
+
+
   
     db.execute('CREATE TABLE exercises (
                   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -84,8 +88,9 @@ class Seeder
     days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     
     days.each do |day|
-      db.execute('INSERT INTO weeks (week_id, day) VALUES (?, ?)', [1, day])
+      db.execute('INSERT INTO weeks (user_id, week_id, day) VALUES (?, ?, ?)', [1, 1, day])
     end
+    
 
     exercises = [
       { goal: "Build muscle", day: "Monday", exercise: "Bench Press" },

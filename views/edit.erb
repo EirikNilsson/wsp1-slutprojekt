@@ -1,28 +1,31 @@
-<div class="login-container">
-  <h1>Edit your trainingprogram</h1>
+<a href="/training">Training</a>
+<% @days.each do |day| %>
+    <div class="day">
+      <p><strong><%= day[:day] %></strong></p>
   
-  <form action="/edit" method="POST">
-    <label for="goal">
-      What is your goal?:
-      <select name="goal" id="goal" required>
-        <option value="Build muscle">Build muscle</option>
-        <option value="Lose weight">Lose weight</option>
-        <option value="Improve endurance">Better stamina</option>
-      </select>
-    </label>
-    
-    <label for="days">
-        Amount of training days a week:
-        <input type="number" name="days" id="days" min="1" max="7" required>
-    </label>
-    
-    <label for="duration">
-        Workout length (min):
-        <input type="number" name="duration" id="duration" min="10" max="180" required>
-    </label>
-    
-    <button type="submit">Save changes</button>
-  </form>
-</div>
+      <% if day[:exercises].any? %>
+        <ul>
+          <% day[:exercises].each do |exercise| %>
+            <li>
+              <%= exercise %>
+              <form action="/delete_exercise" method="post" style="display:inline;">
+                <input type="hidden" name="exercise" value="<%= exercise %>">
+                <button type="submit">❌</button>
+              </form>s
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p>Rest Day</p>
+      <% end %>
+  
+      <form action="/add_exercise" method="post">
+        <input type="hidden" name="day" value="<%= day[:day] %>">
+        <input type="text" name="exercise" placeholder="New Exercise" required>
+        <button type="submit">Add</button>
+      </form>
+    </div>
+<% end %>
 
 
+  

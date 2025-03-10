@@ -11,10 +11,12 @@
     <div class="logo">Logo</div>
     <nav>
       <ul class="nav">
-        <li><a href="training">Training</a></li>
-        <li><a href="diet">Diet</a></li>
-        <li><a href="edit">Edit your program</a></li>
-        <li><a href="logout">Log out</a></li>
+        <li><a href="/training">Training</a></li>
+        <li><a href="/diet">Diet</a></li>
+        <li><a href="/create">Create your program</a></li>
+        <li><a href="/edit">Edit your program</a></li>
+        <li><a href="/logout">Log out</a></li>
+        
       </ul>
     </nav>
   </aside>
@@ -24,14 +26,23 @@
     <main class="main">
       <section class="box box-1">
         <% if @days_per_week || @goal || @duration %>
-          <p>Duration: <%= @duration || "None" %> </p>
-          <p>Trainingdays in week: <%= @days_per_week || "None" %> </p>
+          <p>Duration: <%= @duration || "None" %> min</p>
+          <p>Trainingdays in week: <%= @days_per_week || "None" %> days </p>
           <p>Goal: <%= @goal || "None" %> </p>
         <% else %>
           <p>Duration: None</p>
           <p>Trainingdays in week: None </p>
           <p>Goal: None </p>
         <% end %>
+        <form action="/users/<%= session[:user_id] %>" method="GET">
+          <button type="submit">Show profile</button>
+        </form>
+        <form action="/users/<%= session[:user_id] %>/delete" method="POST">
+          <input type="hidden" name="_method" value="DELETE">
+          <button type="submit">Delete Profile</button>
+        </form>
+ 
+        
       
       </section>
       <div class="week-container">

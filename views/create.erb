@@ -1,0 +1,28 @@
+<div class="login-container">
+  <h1>Create your trainingprogram</h1>
+  
+  <form action="/create" method="POST">
+    <label for="goal">
+      What is your goal?:
+      <select name="goal" id="goal" required>
+        <option value="Build muscle">Build muscle</option>
+        <option value="Lose weight">Lose weight</option>
+        <option value="Improve endurance">Better stamina</option>
+      </select>
+    </label>
+    
+    <label for="days">
+        Amount of training days a week:
+        <input type="number" name="days" id="days" min="1" max="7" required>
+    </label>
+    
+    <label for="duration">
+        Workout length (min):
+        <input type="number" name="duration" id="duration" min="10" max="180" required>
+    </label>
+    
+    <button type="submit">Save changes</button>
+  </form>
+</div>
+
+
