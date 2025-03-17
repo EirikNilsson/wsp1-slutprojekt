@@ -118,6 +118,7 @@ class App < Sinatra::Base
 
   get '/training' do
     db = db_connection
+    
   
     # Hämta användarens träningsdata från databasen
     user_data = db.execute('SELECT goal, days, duration FROM training_goals WHERE user_id = ?', session[:user_id]).first
@@ -165,11 +166,10 @@ class App < Sinatra::Base
   end
 
   get '/edit' do
-    db = db_connection  # Add this line to establish a database connection
+    db = db_connection 
     @exercises = db.execute("SELECT * FROM exercises")
-    @days = db.execute("SELECT * FROM weeks WHERE user_id = ?", session[:user_id])  # Assuming this is what you need for @days
+    @days = db.execute("SELECT * FROM weeks WHERE user_id = ?", session[:user_id]) 
     
-    # Now map the days correctly
     @days = @days.map do |day|
       {
         day: day["day"],
@@ -179,28 +179,65 @@ class App < Sinatra::Base
     
     erb :edit
   end
-# Modify '/add_exercise' to use the existing 'weeks' table
-post '/add_exercise' do
-  day = params[:day]
-  exercise = params[:exercise]
-  
-  # Find the week_id and user_id from the 'weeks' table
-  week = db.execute("SELECT id FROM weeks WHERE user_id = ? AND day = ?", session[:user_id], day).first
-  
-  if week
-    db.execute("INSERT INTO exercises (week_id, day, exercise, goal, checkmark) VALUES (?, ?, ?, ?, ?)",
-               [week["id"], day, exercise, session[:user_id], 0])
-  end
 
-  redirect '/edit'
-end
+  post '/add_exercise' do
+    db = SQLite3::Database.new('db/training.db')
+    db.results_as_hash = true
+  
+    exercise = params["exercise"]
+    goal = params["goal"]
+    day = params["day"]
+  
+    if session[:user_id].nil?
+      halt 403, "You must be logged in to add exercises."
+    end
+  
+    week = db.execute("SELECT id FROM weeks WHERE user_id = ? AND day = ?", [session[:user_id], day]).first
+  
+    if week.nil?
+      halt 400, "No week found for the given user and day."
+    end
+  
+    week_id = week["id"]
+  
+    db.execute("INSERT INTO exercises (week_id, day, exercise, goal) VALUES (?, ?, ?, ?)", [week_id, day, exercise, goal])
+  
+    redirect '/training'
+  end
+  
+
 
 # Modify '/delete_exercise' to use the existing 'exercises' table
 post '/delete_exercise' do
-  exercise = params[:exercise]
-  db.execute("DELETE FROM exercises WHERE exercise = ? AND week_id IN (SELECT id FROM weeks WHERE user_id = ?)", exercise, session[:user_id])
-  redirect '/edit'
+  db = SQLite3::Database.new('db/training.db')
+  db.results_as_hash = true
+
+  exercise = params["exercise"]
+  day = params["day"]
+
+  if session[:user_id].nil?
+    halt 403, "You must be logged in to delete exercises."
+  end
+
+  week = db.execute("SELECT id FROM weeks WHERE user_id = ? AND day = ?", [session[:user_id], day]).first
+
+  if week.nil?
+    halt 400, "No week found for the given user and day."
+  end
+
+  week_id = week["id"]
+
+  deleted = db.execute("DELETE FROM exercises WHERE exercise = ? AND week_id = ? AND day = ?", [exercise, week_id, day])
+
+  if deleted == 0
+    halt 404, "No exercise found to delete."
+  end
+
+  redirect '/training'
 end
+
+
+
 
   
   
