@@ -1,0 +1,30 @@
+<a href="/training">Training</a>
+
+<% @days.each do |day| %>
+  <div class="day">
+    <p><strong><%= day[:day] %></strong></p>
+
+    <% if day[:exercises].any? %>
+      <ul>
+        <% day[:exercises].each do |exercise| %>
+          <li>
+            <%= exercise %>
+            <form action="/delete_exercise" method="post" style="display:inline;">
+              <input type="hidden" name="exercise" value="<%= exercise %>">
+              <input type="hidden" name="day" value="<%= day[:day] %>">
+              <button type="submit">❌</button>
+            </form>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p>Rest Day</p>
+    <% end %>
+    
+    <form action="/add_exercise" method="post">
+      <input type="hidden" name="day" value="<%= day[:day] %>">
+      <input type="text" name="exercise" placeholder="New Exercise" required>
+      <button type="submit">Add</button>
+    </form>
+  </div>
+<% end %>

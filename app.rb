@@ -2,6 +2,7 @@ require 'sinatra'
 require 'sqlite3'
 require 'bcrypt'
 require 'securerandom'
+require_relative 'models/user'
 
 class App < Sinatra::Base
   def db_connection
@@ -23,9 +24,15 @@ class App < Sinatra::Base
     if session[:user_id]
       redirect '/training'
     else
-      erb :index
+      erb(:"users/index")
     end
   end
+
+  get '/users' do
+    @users = User.all();
+    erb(:"users/show")
+ end
+ 
 
   get '/users/:id' do
     redirect '/login' unless session[:user_id]
@@ -42,10 +49,7 @@ class App < Sinatra::Base
 
   post '/users/:id/delete' do
     redirect '/login' unless session[:user_id] == params[:id].to_i
-    
-    db = db_connection
-    db.execute("DELETE FROM users WHERE id = ?", [params[:id]])
-
+    User.delete(params[:id])
     session.clear
   
 
@@ -53,15 +57,15 @@ class App < Sinatra::Base
   end
 
   get '/signup' do
-    erb :newuser 
+    erb(:"users/new")
   end
 
   post '/signup' do
     username = params[:username]
     plain_password = params[:password]
     password_hashed = BCrypt::Password.create(plain_password)
-    db = db_connection
-    db.execute("INSERT INTO users (username, password) VALUES (?, ?)", [username, password_hashed])
+    @users = User.create(username: username, password: password_hashed)
+    
     redirect '/login' 
   end
 
@@ -91,8 +95,8 @@ class App < Sinatra::Base
     redirect '/login'
   end
 
-  get '/create' do 
-    erb :create
+  get '/new' do 
+    erb(:"programs/new")
   end
   
   post '/create' do
@@ -113,7 +117,7 @@ class App < Sinatra::Base
   end
 
   get '/unauthorized' do
-    erb :unauthorized
+    erb(:"users/unauthorized")
   end
 
   get '/training' do
@@ -162,79 +166,93 @@ class App < Sinatra::Base
       @days = []
     end
   
-    erb :training
+    erb(:"programs/index")
   end
 
   get '/edit' do
-    db = db_connection 
-    @exercises = db.execute("SELECT * FROM exercises")
-    @days = db.execute("SELECT * FROM weeks WHERE user_id = ?", session[:user_id]) 
+    db = db_connection
     
+    # Hämta användarens träningsmål
+    goal_data = db.execute("SELECT goal FROM training_goals WHERE user_id = ?", session[:user_id]).first
+    if goal_data
+      goal = goal_data['goal']
+    else
+      halt 404, "No goal found for user"
+    end
+    
+    # Hämta alla veckodagar för användaren
+    @days = db.execute("SELECT * FROM weeks WHERE user_id = ?", session[:user_id])
+  
+    # Hämta alla övningar för det specifika målet och skapa en struktur för varje dag
+    @exercises = db.execute("SELECT day, exercise FROM exercises WHERE goal = ?", goal)
+  
+    # Organisera övningarna per dag
     @days = @days.map do |day|
       {
         day: day["day"],
-        exercises: db.execute("SELECT exercise FROM exercises WHERE day = ?", day["day"]).map { |e| e["exercise"] }
+        exercises: @exercises.select { |e| e["day"] == day["day"] }.map { |e| e["exercise"] }
       }
     end
-    
-    erb :edit
+  
+    erb(:"programs/edit")
   end
+  
+  
 
   post '/add_exercise' do
-    db = SQLite3::Database.new('db/training.db')
-    db.results_as_hash = true
-  
+    db = db_connection
+    
     exercise = params["exercise"]
     goal = params["goal"]
     day = params["day"]
-  
+    
     if session[:user_id].nil?
       halt 403, "You must be logged in to add exercises."
     end
-  
-    week = db.execute("SELECT id FROM weeks WHERE user_id = ? AND day = ?", [session[:user_id], day]).first
-  
+
+    week = db.execute("SELECT id FROM weeks WHERE user_id = ? AND day = ?", session[:user_id], day).first
     if week.nil?
       halt 400, "No week found for the given user and day."
     end
-  
+    
     week_id = week["id"]
-  
+
     db.execute("INSERT INTO exercises (week_id, day, exercise, goal) VALUES (?, ?, ?, ?)", [week_id, day, exercise, goal])
-  
+    
     redirect '/training'
   end
   
+  
 
 
-# Modify '/delete_exercise' to use the existing 'exercises' table
-post '/delete_exercise' do
-  db = SQLite3::Database.new('db/training.db')
-  db.results_as_hash = true
-
-  exercise = params["exercise"]
-  day = params["day"]
-
-  if session[:user_id].nil?
-    halt 403, "You must be logged in to delete exercises."
+  post '/delete_exercise' do
+    db = db_connection
+    
+    exercise = params["exercise"]
+    day = params["day"]
+    
+    if session[:user_id].nil?
+      halt 403, "You must be logged in to delete exercises."
+    end
+    
+    # Kontrollera om veckan existerar
+    week = db.execute("SELECT id FROM weeks WHERE user_id = ? AND day = ?", session[:user_id], day).first
+    if week.nil?
+      halt 400, "No week found for the given user and day."
+    end
+    
+    week_id = week["id"]
+    
+    # Ta bort övningen
+    deleted = db.execute("DELETE FROM exercises WHERE exercise = ? AND week_id = ? AND day = ?", [exercise, week_id, day])
+    
+    if deleted == 0
+      halt 404, "No exercise found to delete."
+    end
+    
+    redirect '/training'
   end
-
-  week = db.execute("SELECT id FROM weeks WHERE user_id = ? AND day = ?", [session[:user_id], day]).first
-
-  if week.nil?
-    halt 400, "No week found for the given user and day."
-  end
-
-  week_id = week["id"]
-
-  deleted = db.execute("DELETE FROM exercises WHERE exercise = ? AND week_id = ? AND day = ?", [exercise, week_id, day])
-
-  if deleted == 0
-    halt 404, "No exercise found to delete."
-  end
-
-  redirect '/training'
-end
+  
 
 
 
@@ -263,7 +281,7 @@ end
       @days = []
     end
   
-    erb :diet
+    erb(:"programs/diet")
   end
 
   post '/log_weight' do
