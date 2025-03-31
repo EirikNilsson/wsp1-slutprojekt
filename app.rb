@@ -100,19 +100,28 @@ class App < Sinatra::Base
   end
   
   post '/create' do
-    goal = params[:goal]
-    days = params[:days].to_i
-    duration = params[:duration].to_i
-    db = db_connection
-  
-    existing_goal = db.execute("SELECT * FROM training_goals WHERE user_id = ?", session[:user_id]).first
-  
-    if existing_goal
-      db.execute("UPDATE training_goals SET goal = ?, days = ?, duration = ? WHERE user_id = ?", [goal, days, duration, session[:user_id]])
-    else
-      db.execute("INSERT INTO training_goals (user_id, goal, days, duration) VALUES (?, ?, ?, ?)", [session[:user_id], goal, days, duration])
-    end
-  
+      goal = params[:goal]
+      days = params[:days].to_i
+      duration = params[:duration].to_i
+      user_id = session[:user_id].to_i
+      db = db_connection
+
+      existing = db.execute("SELECT * FROM user_exercises WHERE user_id = ?", [user_id])
+
+      if existing.empty?
+        # Kopiera övningar från huvuddatabasen till användarens egna schema
+        db.execute("INSERT INTO user_exercises (user_id, day, exercise, goal)
+                    SELECT ?, day, exercise, goal FROM exercises WHERE goal = ?", [user_id, goal])
+      end
+    
+      existing_goal = db.execute("SELECT * FROM training_goals WHERE user_id = ?", session[:user_id]).first
+    
+      if existing_goal
+        db.execute("UPDATE training_goals SET goal = ?, days = ?, duration = ? WHERE user_id = ?", [goal, days, duration, session[:user_id]])
+      else
+        db.execute("INSERT INTO training_goals (user_id, goal, days, duration) VALUES (?, ?, ?, ?)", [session[:user_id], goal, days, duration])
+      end
+    
     redirect '/training'
   end
 
@@ -148,9 +157,11 @@ class App < Sinatra::Base
   
       # Skapa en struktur för alla dagar
       @days = all_days.map { |day| { day: day, exercises: [] } }
+
+
   
       # Hämta övningarna
-      exercises = db.execute('SELECT exercise FROM exercises WHERE goal = ?', @goal)
+      exercises = db.execute('SELECT exercise FROM user_exercises WHERE goal = ?', @goal)
   
       # Fördela övningarna
       if exercises.any?
@@ -172,26 +183,47 @@ class App < Sinatra::Base
   get '/edit' do
     db = db_connection
     
-    # Hämta användarens träningsmål
-    goal_data = db.execute("SELECT goal FROM training_goals WHERE user_id = ?", session[:user_id]).first
-    if goal_data
-      goal = goal_data['goal']
-    else
-      halt 404, "No goal found for user"
-    end
-    
-    # Hämta alla veckodagar för användaren
-    @days = db.execute("SELECT * FROM weeks WHERE user_id = ?", session[:user_id])
   
-    # Hämta alla övningar för det specifika målet och skapa en struktur för varje dag
-    @exercises = db.execute("SELECT day, exercise FROM exercises WHERE goal = ?", goal)
+    # Hämta användarens träningsdata från databasen
+    user_data = db.execute('SELECT goal, days, duration FROM training_goals WHERE user_id = ?', session[:user_id]).first
   
-    # Organisera övningarna per dag
-    @days = @days.map do |day|
-      {
-        day: day["day"],
-        exercises: @exercises.select { |e| e["day"] == day["day"] }.map { |e| e["exercise"] }
+    if user_data
+      @goal = user_data['goal']
+      @days_per_week = user_data['days'].to_i
+      @duration = user_data['duration']
+  
+      all_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+  
+      training_schedules = {
+        1 => ["Wednesday"],
+        2 => ["Monday", "Thursday"],
+        3 => ["Monday", "Wednesday", "Friday"],
+        4 => ["Monday", "Tuesday", "Thursday", "Saturday"],
+        5 => ["Monday", "Tuesday", "Wednesday", "Friday", "Saturday"],
+        6 => ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+        7 => all_days
       }
+  
+      selected_days = training_schedules[@days_per_week] || all_days.first(@days_per_week)
+  
+      # Skapa en struktur för alla dagar
+      @days = all_days.map { |day| { day: day, exercises: [] } }
+  
+      # Hämta övningarna
+      exercises = db.execute('SELECT exercise FROM user_exercises WHERE goal = ?', @goal)
+  
+      # Fördela övningarna
+      if exercises.any?
+        selected_days.each_with_index do |day, index|
+          day_entry = @days.find { |d| d[:day] == day }
+          day_entry[:exercises] << exercises[index % exercises.length]['exercise'] if day_entry
+        end
+      end
+    else
+      @goal = nil
+      @days_per_week = nil
+      @duration = nil
+      @days = []
     end
   
     erb(:"programs/edit")
@@ -199,7 +231,7 @@ class App < Sinatra::Base
   
   
 
-  post '/add_exercise' do
+  post '/exercises/add' do
     db = db_connection
     
     exercise = params["exercise"]
@@ -209,49 +241,36 @@ class App < Sinatra::Base
     if session[:user_id].nil?
       halt 403, "You must be logged in to add exercises."
     end
-
-    week = db.execute("SELECT id FROM weeks WHERE user_id = ? AND day = ?", session[:user_id], day).first
+  
+    # Se till att det finns en vecka för den här dagen
+    week = db.execute("SELECT id FROM weeks WHERE user_id = ? AND day = ?", [session[:user_id], day]).first
     if week.nil?
       halt 400, "No week found for the given user and day."
     end
     
     week_id = week["id"]
-
-    db.execute("INSERT INTO exercises (week_id, day, exercise, goal) VALUES (?, ?, ?, ?)", [week_id, day, exercise, goal])
+  
+    db.execute("INSERT INTO user_exercises (week_id, user_id, day, exercise, goal) VALUES (?, ?, ?, ?, ?)", [week_id, session[:user_id], day, exercise, goal])
     
     redirect '/training'
   end
   
   
 
-
-  post '/delete_exercise' do
+  post '/exercises/delete' do
     db = db_connection
     
     exercise = params["exercise"]
     day = params["day"]
+    p exercise
+    p day
     
-    if session[:user_id].nil?
-      halt 403, "You must be logged in to delete exercises."
-    end
-    
-    # Kontrollera om veckan existerar
-    week = db.execute("SELECT id FROM weeks WHERE user_id = ? AND day = ?", session[:user_id], day).first
-    if week.nil?
-      halt 400, "No week found for the given user and day."
-    end
-    
-    week_id = week["id"]
-    
-    # Ta bort övningen
-    deleted = db.execute("DELETE FROM exercises WHERE exercise = ? AND week_id = ? AND day = ?", [exercise, week_id, day])
-    
-    if deleted == 0
-      halt 404, "No exercise found to delete."
-    end
-    
-    redirect '/training'
+    db.execute("DELETE FROM user_exercises WHERE day = ? AND exercise = ?", [day, exercise])
+  
+    redirect '/training'  
   end
+  
+
   
 
 

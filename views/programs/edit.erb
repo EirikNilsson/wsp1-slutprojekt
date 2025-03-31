@@ -1,4 +1,27 @@
-<a href="/training">Training</a>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training</title>
+    <link rel="stylesheet" type="text/css" href="public/style.css?<%=Time.now.to_i%>">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="logo">Logo</div>
+    <nav>
+      <ul class="nav">
+        <li><a href="/training">Training</a></li>
+        <li><a href="/diet">Diet</a></li>
+        <li><a href="/new">Create your program</a></li>
+        <li><a href="/edit">Edit your program</a></li>
+        <li><a href="/logout">Log out</a></li>
+        
+      </ul>
+    </nav>
+  </aside>
+
+
 
 <% @days.each do |day| %>
   <div class="day">
@@ -9,7 +32,7 @@
         <% day[:exercises].each do |exercise| %>
           <li>
             <%= exercise %>
-            <form action="/delete_exercise" method="post" style="display:inline;">
+            <form action="/exercises/delete" method="post" style="display:inline;">
               <input type="hidden" name="exercise" value="<%= exercise %>">
               <input type="hidden" name="day" value="<%= day[:day] %>">
               <button type="submit">❌</button>
@@ -21,7 +44,8 @@
       <p>Rest Day</p>
     <% end %>
     
-    <form action="/add_exercise" method="post">
+    <form action="/exercises/add" method="post">
+      <input type="hidden" name="goal" value="<%= @goal %>">
       <input type="hidden" name="day" value="<%= day[:day] %>">
       <input type="text" name="exercise" placeholder="New Exercise" required>
       <button type="submit">Add</button>

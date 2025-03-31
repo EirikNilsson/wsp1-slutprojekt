@@ -65,6 +65,13 @@ class Seeder
                   weight FLOAT NOT NULL,
                   date DATE NOT NULL,
                   FOREIGN KEY (user_id) REFERENCES users(id))')
+    db.execute('CREATE TABLE IF NOT EXISTS user_exercises (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  user_id INTEGER,
+                  day TEXT,
+                  exercise TEXT,
+                  goal TEXT,
+                  FOREIGN KEY (user_id) REFERENCES users(id));')
   end
 
   def self.populate_tables
@@ -151,7 +158,7 @@ class Seeder
   private
 
   def self.db
-    @db ||= SQLite3::Database.new('db/training.db').tap do |db| 
+    @db ||= SQLite3::Database.new('db/users.sqlite').tap do |db| 
       db.results_as_hash = true
     end
   end
