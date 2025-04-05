@@ -32,23 +32,32 @@
         <% day[:exercises].each do |exercise| %>
           <li>
             <%= exercise %>
-            <form action="/exercises/delete" method="post" style="display:inline;">
-              <input type="hidden" name="exercise" value="<%= exercise %>">
-              <input type="hidden" name="day" value="<%= day[:day] %>">
-              <button type="submit">❌</button>
-            </form>
+              <li>
+                <form action="/exercises/update" method="post" style="display:inline;">
+                  <input type="hidden" name="day" value="<%= day[:day] %>">
+                  <input type="hidden" name="old_exercise" value="<%= exercise %>">
+                  <input type="text" name="new_exercise" value="<%= exercise %>" required>
+                  <button type="submit">✏️</button>
+                </form>
+                <form action="/exercises/delete" method="post" style="display:inline;">
+                  <input type="hidden" name="day" value="<%= day[:day] %>">
+                  <input type="hidden" name="old_exercise" value="<%= exercise %>">
+                  <button type="submit">❌</button>
+                </form>
+              </li>
           </li>
         <% end %>
       </ul>
     <% else %>
       <p>Rest Day</p>
+        <form action="/exercises/add" method="post">
+        <input type="hidden" name="day" value="<%= day[:day] %>">
+        <input type="hidden" name="old_exercise" value="">
+        <input type="text" name="new_exercise" placeholder="New Exercise" required>
+        <button type="submit">Add</button>
+      </form>
+    
     <% end %>
     
-    <form action="/exercises/add" method="post">
-      <input type="hidden" name="goal" value="<%= @goal %>">
-      <input type="hidden" name="day" value="<%= day[:day] %>">
-      <input type="text" name="exercise" placeholder="New Exercise" required>
-      <button type="submit">Add</button>
-    </form>
   </div>
 <% end %>
