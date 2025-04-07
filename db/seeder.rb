@@ -22,7 +22,8 @@ class Seeder
     db.execute('CREATE TABLE users (
                   id INTEGER PRIMARY KEY AUTOINCREMENT,
                   username TEXT UNIQUE NOT NULL,
-                  password TEXT NOT NULL)')
+                  password TEXT NOT NULL,
+                  role TEXT NOT NULL)')
 
     db.execute('CREATE TABLE goals (
                   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -76,7 +77,7 @@ class Seeder
 
   def self.populate_tables
     password_hashed = BCrypt::Password.create("189")
-    db.execute('INSERT INTO users (username, password) VALUES (?, ?)', ["eirik", password_hashed])
+    db.execute('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', ["eirik", password_hashed, "admin"])
 
     goals = [
       { goal: "Build muscle", days: 5, session_length: 60 },
@@ -116,12 +117,16 @@ class Seeder
       { goal: "Lose weight", day: "Wednesday", exercise: "Cycling" },
       { goal: "Lose weight", day: "Thursday", exercise: "Swimming" },
       { goal: "Lose weight", day: "Friday", exercise: "HIIT Circuit" },
+      { goal: "Lose weight", day: "Saturday", exercise: "Terrain running" },
+      { goal: "Lose weight", day: "Sunday", exercise: "Running" },
     
       { goal: "Improve endurance", day: "Monday", exercise: "Long-distance Running" },
       { goal: "Improve endurance", day: "Tuesday", exercise: "Rowing Machine" },
       { goal: "Improve endurance", day: "Wednesday", exercise: "Interval Sprints" },
       { goal: "Improve endurance", day: "Thursday", exercise: "Jump Rope" },
-      { goal: "Improve endurance", day: "Friday", exercise: "Burpees" }
+      { goal: "Improve endurance", day: "Friday", exercise: "Burpees" },
+      { goal: "Improve endurance", day: "Saturday", exercise: "Running" },
+      { goal: "Improve endurance", day: "Sunday", exercise: "Terrain running" }
     ]
     
     exercises.each do |exercise|
@@ -136,19 +141,26 @@ class Seeder
       { meal: "Egg and Avocado Toast", day: "Wednesday", goal: "Build muscle" },
       { meal: "Protein Pancakes", day: "Thursday", goal: "Build muscle" },
       { meal: "Grilled Salmon with Asparagus", day: "Friday", goal: "Build muscle" },
+      { meal: "Cottage Cheese with Berries and Nuts", day: "Saturday", goal: "Build muscle" },
+      { meal: "Omelette with Spinach and Turkey", day: "Sunday", goal: "Build muscle" },
     
       { meal: "Grilled Fish with Steamed Vegetables", day: "Monday", goal: "Lose weight" },
       { meal: "Vegetable Soup", day: "Tuesday", goal: "Lose weight" },
       { meal: "Grilled Chicken Salad", day: "Wednesday", goal: "Lose weight" },
       { meal: "Zucchini Noodles with Pesto", day: "Thursday", goal: "Lose weight" },
       { meal: "Quinoa and Black Bean Salad", day: "Friday", goal: "Lose weight" },
+      { meal: "Baked Cod with Roasted Veggies", day: "Saturday", goal: "Lose weight" },
+      { meal: "Greek Yogurt with Berries and Seeds", day: "Sunday", goal: "Lose weight" },
     
       { meal: "Oatmeal with Banana and Almond Butter", day: "Monday", goal: "Improve endurance" },
       { meal: "Sweet Potato and Chickpea Curry", day: "Tuesday", goal: "Improve endurance" },
       { meal: "Grilled Chicken with Brown Rice", day: "Wednesday", goal: "Improve endurance" },
       { meal: "Lentil and Vegetable Stew", day: "Thursday", goal: "Improve endurance" },
-      { meal: "Grilled Turkey Burger with Sweet Potato Fries", day: "Friday", goal: "Improve endurance" }
-    ]
+      { meal: "Grilled Turkey Burger with Sweet Potato Fries", day: "Friday", goal: "Improve endurance" },
+      { meal: "Whole Grain Pasta with Veggie Sauce", day: "Saturday", goal: "Improve endurance" },
+      { meal: "Smoothie Bowl with Granola and Fruits", day: "Sunday", goal: "Improve endurance" }
+    ];
+    
     
     meals.each do |meal|
       db.execute('INSERT INTO diets (meal, day, goal) VALUES (?, ?, ?)', [meal[:meal], meal[:day], meal[:goal]])
@@ -158,7 +170,7 @@ class Seeder
   private
 
   def self.db
-    @db ||= SQLite3::Database.new('db/users.sqlite').tap do |db| 
+    @db ||= SQLite3::Database.new('db/TrainingProgramsitedeluxe:theveryfirst.sqlite').tap do |db| 
       db.results_as_hash = true
     end
   end

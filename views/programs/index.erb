@@ -42,11 +42,25 @@
           <button type="submit">Delete Profile</button>
         </form>
         <form action="/exercises/delete_all" method="post">
-          <button type="submit">Radera alla övningar från user_exercises</button>
+          <button type="submit">Delete all your exercises</button>
         </form>
- 
-        
+        <p>Session role: <%= @role['role'] %></p>
+        <% if @role['role'] == "admin" %>
+          <form action="/users/deleteAll" method="post">
+           <button type="submit">Delete all profiles</button>
+          </form>
+          <h2>Users:</h2>
+          <ul>
+            <% @users.each do |user| %>
+              <li>
+                User-id: <%= user["id"] %>, Username: <%= user["username"] %>, Role: <%= user["role"] %>
+              </li>
+            <% end %>
+          </ul>
+        <% end %>
       
+      
+
       </section>
       <div class="week-container">
       <% @days.each do |day| %>

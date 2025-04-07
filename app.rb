@@ -6,7 +6,7 @@ require_relative 'models/user'
 
 class App < Sinatra::Base
   def db_connection
-    db = SQLite3::Database.new 'db/users.sqlite'
+    db = SQLite3::Database.new 'db/TrainingProgramsitedeluxe:theveryfirst.sqlite'
     db.results_as_hash = true
     db
   end
@@ -31,7 +31,12 @@ class App < Sinatra::Base
   get '/users' do
     @users = User.all();
     erb(:"users/show")
- end
+  end
+
+  post '/users/deleteAll' do
+      User.deleteAll
+      redirect("/login")
+  end
  
 
   get '/users/:id' do
@@ -100,6 +105,9 @@ class App < Sinatra::Base
   end
   
   post '/create' do
+      if !session[:user_id]
+        redirect("/login")
+      end
       goal = params[:goal]
       days = params[:days].to_i
       duration = params[:duration].to_i
@@ -158,10 +166,16 @@ class App < Sinatra::Base
   end
 
   get '/training' do
+    if !session[:user_id]
+      redirect("/login")
+    end
     db = db_connection
+    @role = db.execute('SELECT role FROM users WHERE id = ?', session[:user_id]).first
     
-  
-    # Hämta användarens träningsdata från databasen
+    # Hämta alla användare om rollen är admin
+    if @role["role"] == "admin"
+      @users = db.execute("SELECT * FROM users")
+    end
     user_data = db.execute('SELECT goal, days, duration FROM training_goals WHERE user_id = ?', session[:user_id]).first
   
     if user_data
@@ -209,6 +223,9 @@ class App < Sinatra::Base
   end
 
   get '/edit' do
+    if !session[:user_id]
+      redirect("/login")
+    end
     db = db_connection
     user_data = db.execute('SELECT goal, days, duration FROM training_goals WHERE user_id = ?', session[:user_id]).first
   
@@ -263,7 +280,7 @@ class App < Sinatra::Base
   
     redirect '/edit'
   end
-  
+
   
   
 
