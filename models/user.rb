@@ -20,6 +20,7 @@ class User
     end
 
 
+
     def self.create(username:, password:)
         return db.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", [username, password, "standard"])
     end

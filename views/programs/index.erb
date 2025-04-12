@@ -47,7 +47,12 @@
         <p>Session role: <%= @role['role'] %></p>
         <% if @role['role'] == "admin" %>
           <form action="/users/deleteAll" method="post">
-           <button type="submit">Delete all profiles</button>
+            <button type="submit">Delete all profiles that are not admins</button>
+          </form>
+          <p>Delete profile with ID:</p>
+          <form action="/users/delete" method="post">
+            <input type="number" name="user_id" id="user_id" required>
+            <button type="submit">Delete</button>
           </form>
           <h2>Users:</h2>
           <ul>

@@ -37,6 +37,23 @@ class App < Sinatra::Base
       User.deleteAll
       redirect("/login")
   end
+
+  post '/users/delete' do
+    db = db_connection
+    user_id = params[:user_id]
+    user = db.execute("SELECT * FROM users WHERE id = ?", user_id).first
+    if user && user["role"] == "standard"
+      User.delete(user_id)
+      @message = "User with ID #{user_id} deleted."
+      redirect '/training'
+    elsif user && user["role"] == "admin"
+      @error = "Cannot delete because user is admin."
+    else
+      @error = "No user with that id"
+    end
+
+  
+  end
  
 
   get '/users/:id' do
