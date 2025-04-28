@@ -22,10 +22,53 @@ class App < Sinatra::Base
 
   get '/login' do
     if session[:user_id]
-      redirect '/training'
+      redirect '/programs'
     else
       erb(:"users/index")
     end
+  end
+
+  post '/login' do
+    request_username = params[:username]
+    request_plain_password = params[:password]
+    db = db_connection
+    user = db.execute("SELECT * FROM users WHERE username = ?", request_username).first
+    unless user
+      status 401
+      redirect '/unauthorized'
+    end
+    db_id = user["id"].to_i
+    db_password_hashed = user["password"].to_s
+    bcrypt_db_password = BCrypt::Password.new(db_password_hashed)
+    if bcrypt_db_password == request_plain_password
+      session[:user_id] = db_id
+      redirect '/programs'
+    else
+      status 401
+      redirect '/unauthorized'
+    end
+  end
+
+  get '/unauthorized' do
+    erb(:"users/unauthorized")
+  end
+
+  get '/logout' do
+    session.clear
+    redirect '/login'
+  end
+
+  get '/signup' do
+    erb(:"users/new")
+  end
+
+  post '/signup' do
+    username = params[:username]
+    plain_password = params[:password]
+    password_hashed = BCrypt::Password.create(plain_password)
+    @users = User.create(username: username, password: password_hashed)
+    
+    redirect '/login' 
   end
 
   get '/users' do
@@ -45,7 +88,7 @@ class App < Sinatra::Base
     if user && user["role"] == "standard"
       User.delete(user_id)
       @message = "User with ID #{user_id} deleted."
-      redirect '/training'
+      redirect '/programs'
     elsif user && user["role"] == "admin"
       @error = "Cannot delete because user is admin."
     else
@@ -78,50 +121,15 @@ class App < Sinatra::Base
     redirect '/login'
   end
 
-  get '/signup' do
-    erb(:"users/new")
-  end
 
-  post '/signup' do
-    username = params[:username]
-    plain_password = params[:password]
-    password_hashed = BCrypt::Password.create(plain_password)
-    @users = User.create(username: username, password: password_hashed)
-    
-    redirect '/login' 
-  end
 
-  post '/login' do
-    request_username = params[:username]
-    request_plain_password = params[:password]
-    db = db_connection
-    user = db.execute("SELECT * FROM users WHERE username = ?", request_username).first
-    unless user
-      status 401
-      redirect '/unauthorized'
-    end
-    db_id = user["id"].to_i
-    db_password_hashed = user["password"].to_s
-    bcrypt_db_password = BCrypt::Password.new(db_password_hashed)
-    if bcrypt_db_password == request_plain_password
-      session[:user_id] = db_id
-      redirect '/training'
-    else
-      status 401
-      redirect '/unauthorized'
-    end
-  end
 
-  get '/logout' do
-    session.clear
-    redirect '/login'
-  end
 
-  get '/new' do 
+  get '/programs/new' do 
     erb(:"programs/new")
   end
   
-  post '/create' do
+  post '/programs/create' do
       if !session[:user_id]
         redirect("/login")
       end
@@ -175,14 +183,12 @@ class App < Sinatra::Base
 
       
     
-    redirect '/training'
+    redirect '/programs'
   end
 
-  get '/unauthorized' do
-    erb(:"users/unauthorized")
-  end
 
-  get '/training' do
+
+  get '/programs' do
     if !session[:user_id]
       redirect("/login")
     end
@@ -239,7 +245,7 @@ class App < Sinatra::Base
     erb(:"programs/index")
   end
 
-  get '/edit' do
+  get '/programs/edit' do
     if !session[:user_id]
       redirect("/login")
     end
@@ -295,7 +301,7 @@ class App < Sinatra::Base
       )
     end
   
-    redirect '/edit'
+    redirect '/programs/edit'
   end
 
   
@@ -310,7 +316,7 @@ class App < Sinatra::Base
     db.execute('UPDATE user_exercises SET exercise = ? WHERE user_id = ? AND day = ? AND exercise = ?', [new_exercise, session[:user_id], params[:day], params[:old_exercise]])
 
   
-    redirect '/edit'  
+    redirect '/programs/edit'  
   end
   
 
@@ -329,15 +335,15 @@ class App < Sinatra::Base
     db.execute('UPDATE user_exercises SET exercise = ? WHERE user_id = ? AND day = ? AND exercise = ?', [params[:new_exercise], session[:user_id], params[:day], params[:old_exercise]])
 
   
-    redirect '/edit'
+    redirect '/programs/edit'
   end
   
 
-  post '/exercises/delete_all' do
+  post '/programs/exercises/delete_all' do
     db = db_connection
     db.execute("DELETE FROM user_exercises")
 
-    redirect '/training'
+    redirect '/programs'
   end
 
   
