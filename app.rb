@@ -4,12 +4,36 @@ require 'bcrypt'
 require 'securerandom'
 require_relative 'models/user'
 
+
 class App < Sinatra::Base
   def db_connection
     db = SQLite3::Database.new 'db/TrainingProgramsitedeluxe:theveryfirst.sqlite'
     db.results_as_hash = true
     db
   end
+
+  helpers do
+    def db
+      @db ||= db_connection
+    end
+  end
+  
+  before do
+    db 
+  end
+
+  
+  all_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+  training_schedules = {
+    1 => ["Wednesday"],
+    2 => ["Monday", "Thursday"],
+    3 => ["Monday", "Wednesday", "Friday"],
+    4 => ["Monday", "Tuesday", "Thursday", "Saturday"],
+    5 => ["Monday", "Tuesday", "Wednesday", "Friday", "Saturday"],
+    6 => ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    7 => all_days
+  }
 
   configure do
     enable :sessions
@@ -31,7 +55,6 @@ class App < Sinatra::Base
   post '/login' do
     request_username = params[:username]
     request_plain_password = params[:password]
-    db = db_connection
     user = db.execute("SELECT * FROM users WHERE username = ?", request_username).first
     unless user
       status 401
@@ -82,7 +105,6 @@ class App < Sinatra::Base
   end
 
   post '/users/delete' do
-    db = db_connection
     user_id = params[:user_id]
     user = db.execute("SELECT * FROM users WHERE id = ?", user_id).first
     if user && user["role"] == "standard"
@@ -101,8 +123,6 @@ class App < Sinatra::Base
 
   get '/users/:id' do
     redirect '/login' unless session[:user_id]
-  
-    db = db_connection
     user = db.execute("SELECT * FROM users WHERE id = ?", [params[:id]]).first
     
     if user
@@ -121,10 +141,6 @@ class App < Sinatra::Base
     redirect '/login'
   end
 
-
-
-
-
   get '/programs/new' do 
     erb(:"programs/new")
   end
@@ -137,27 +153,14 @@ class App < Sinatra::Base
       days = params[:days].to_i
       duration = params[:duration].to_i
       user_id = session[:user_id].to_i
-      db = db_connection
 
       existing = db.execute("SELECT * FROM user_exercises WHERE user_id = ?", [user_id])
 
       if existing.empty? || existing.first["goal"] != goal
         db.execute("DELETE FROM user_exercises WHERE user_id = ?", [user_id])
       
-        training_schedules = {
-          1 => ["Wednesday"],
-          2 => ["Monday", "Thursday"],
-          3 => ["Monday", "Wednesday", "Friday"],
-          4 => ["Monday", "Tuesday", "Thursday", "Saturday"],
-          5 => ["Monday", "Tuesday", "Wednesday", "Friday", "Saturday"],
-          6 => ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-          7 => ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        }
-      
         selected_days = training_schedules[days]
-        all_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
       
-        # Skapa en rad för varje veckodag, med NULL som övning
         all_days.each do |day|
           db.execute("INSERT INTO user_exercises (user_id, day, exercise, goal) VALUES (?, ?, NULL, ?)", [user_id, day, goal])
         end
@@ -192,7 +195,6 @@ class App < Sinatra::Base
     if !session[:user_id]
       redirect("/login")
     end
-    db = db_connection
     @role = db.execute('SELECT role FROM users WHERE id = ?', session[:user_id]).first
     
     # Hämta alla användare om rollen är admin
@@ -206,29 +208,12 @@ class App < Sinatra::Base
       @days_per_week = user_data['days'].to_i
       @duration = user_data['duration']
   
-      all_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-  
-      training_schedules = {
-        1 => ["Wednesday"],
-        2 => ["Monday", "Thursday"],
-        3 => ["Monday", "Wednesday", "Friday"],
-        4 => ["Monday", "Tuesday", "Thursday", "Saturday"],
-        5 => ["Monday", "Tuesday", "Wednesday", "Friday", "Saturday"],
-        6 => ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-        7 => all_days
-      }
-  
       selected_days = training_schedules[@days_per_week] || all_days.first(@days_per_week)
   
-      # Skapa en struktur för alla dagar
       @days = all_days.map { |day| { day: day, exercises: [] } }
 
-
-  
-      # Hämta övningarna
       exercises = db.execute('SELECT exercise FROM user_exercises WHERE goal = ?', @goal)
-  
-      # Fördela övningarna
+
       if exercises.any?
         selected_days.each_with_index do |day, index|
           day_entry = @days.find { |d| d[:day] == day }
@@ -249,20 +234,15 @@ class App < Sinatra::Base
     if !session[:user_id]
       redirect("/login")
     end
-    db = db_connection
     user_data = db.execute('SELECT goal, days, duration FROM training_goals WHERE user_id = ?', session[:user_id]).first
   
     if user_data
       @goal = user_data['goal']
       @days_per_week = user_data['days'].to_i
       @duration = user_data['duration']
-  
-      all_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
       
-      # Hämta ALLA övningar för användaren (oavsett goal)
       user_exercises = db.execute('SELECT day, exercise FROM user_exercises WHERE user_id = ?', session[:user_id])
-  
-      # Bygg dagstrukturen
+
       @days = all_days.map do |day|
         exercise_entry = user_exercises.find { |e| e['day'] == day }
         { 
@@ -278,7 +258,6 @@ class App < Sinatra::Base
   
 
   post '/exercises/add' do
-    db = db_connection
     old_exercise = params["old_exercise"]
     new_exercise = params["new_exercise"]
     day = params["day"]
@@ -308,7 +287,6 @@ class App < Sinatra::Base
   
 
   post '/exercises/delete' do
-    db = db_connection
     
     old_exercise = params["old_exercise"]
     new_exercise = nil
@@ -322,7 +300,7 @@ class App < Sinatra::Base
 
   
   post '/exercises/update' do
-    db = db_connection
+   
   
     old_exercise = params["old_exercise"]
     new_exercise = params["new_exercise"]
@@ -339,8 +317,8 @@ class App < Sinatra::Base
   end
   
 
-  post '/programs/exercises/delete_all' do
-    db = db_connection
+  post '/exercises/delete_all' do
+
     db.execute("DELETE FROM user_exercises")
 
     redirect '/programs'
@@ -350,7 +328,6 @@ class App < Sinatra::Base
   
   
   get '/diet' do
-    db = db_connection
   
     user_goal_data = db.execute('SELECT goal FROM training_goals WHERE user_id = ?', session[:user_id]).first
   
@@ -359,7 +336,6 @@ class App < Sinatra::Base
   
       meals = db.execute('SELECT meal, day FROM diets WHERE goal = ?', goal)
 
-      all_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
       @days = all_days.map { |day| { day: day, meal: nil } }
 
       meals.each do |meal|
@@ -376,7 +352,6 @@ class App < Sinatra::Base
   post '/log_weight' do
     weight = params[:weight].to_f
     date = params[:date]
-    db = db_connection
   
     db.execute('INSERT INTO weights (user_id, weight, date) VALUES (?, ?, ?)', [session[:user_id], weight, date])
   
@@ -384,7 +359,6 @@ class App < Sinatra::Base
   end
 
   get '/weight_data' do
-    db = db_connection
   
     weight_data = db.execute('SELECT date, weight FROM weights WHERE user_id = ? ORDER BY date', session[:user_id])
 
